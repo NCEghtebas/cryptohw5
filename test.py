@@ -21,8 +21,10 @@ import six
 from fernet2 import Fernet2, InvalidToken, MultiFernet
 from PKFernet import PKFernet
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.interfaces import CipherBackend, HMACBackend
-from cryptography.hazmat.primitives.ciphers import algorithms, modes
+from cryptography.hazmat.primitives.asymmetric import ec
+
+# from cryptography.hazmat.backends.interfaces import CipherBackend, HMACBackend
+# from cryptography.hazmat.primitives.ciphers import algorithms, modes
 
 # import cryptography_vectors
 
@@ -128,17 +130,29 @@ class TestFernet(object):
     #     with pytest.raises(ValueError):
     #         Fernet2(base64.urlsafe_b64encode(b"abc"), backend=backend)
 
+def generate_priv_key():
+    # Why is there several keys for one version in the spec?
+    receiver1 = "ecc.secp2241.1.enc.priv"
+    # TODO: does this have to be genertated by a specific algorithim 
+    #  like: ec.generate_private_key( ec.SECP384R1(), default_backend()) ?
+    priv_key1 = urlsafe_b64encode("This is my super secure key!")
+    c = " {0} : -----BEGIN EC PRIVATE KEY-----\n {1} \n-----END EC PRIVATE KEY-----\n".format(receiver1, priv_key1)
+    # 
+    return "{"+c+"}"
 
 class TestPKFernet(object):
     """Test the new Fernet2 with this class. Make sure it tests all the
-    functionalities offered by *Fernet2*.
+    functionalities offered by *PKFernet*.
     """
     
+    key_priv = generate_priv_key()
+
     key_pub = urlsafe_b64encode("This is my super secure key!")
     key_priv = urlsafe_b64encode("This is my super secure key!")
+    # print(len("This is my super secure key!"), key_priv, len(key_priv))
     adata = "Sample associated data" 
     fnt = PKFernet(key_pub, key_priv)
-    # ctxt = fnt.encrypt('Secret Message', associated_data=adata)
+    # ctxt = fnt.encrypt('Secret Message', , , , associated_data=adata)
     # ptxt = fnt.decrypt(ctxt, associated_data=adata)
     pass
 
