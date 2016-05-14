@@ -28,7 +28,22 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 # import cryptography_vectors
 
+from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKeyWithSerialization
+from cryptography.hazmat.primitives.asymmetric import dsa, rsa
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.hazmat.primitives.serialization import PrivateFormat 
 
+
+# Third-Party imports
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+# from cryptography.hazmat.primitives.interfaces import RSAPrivateKey, RSAPublicKey
 def json_parametrize(keys, filename):
     vector_file = cryptography_vectors.open_vector_file(
         os.path.join('fernet', filename), "r"
@@ -57,110 +72,91 @@ class TestFernet(object):
     """This is basically the tests given in test_fernet.py. This tests
     the bacward compatibility of the new Fernet2. 
     """
-    
-    ## This test will not work with new Fernet implementation. No need to worry about it.
-    # @json_parametrize(
-    #     ("secret", "now", "iv", "src", "token"), "generate.json",
-    # )    
-    # def test_generate(self, secret, now, iv, src, token, backend):
-    #     f = Fernet2(secret.encode("ascii"), backend=backend)
-    #     actual_token = f._encrypt_from_parts(
-    #         src.encode("ascii"),
-    #         calendar.timegm(iso8601.parse_date(now).utctimetuple()),
-    #         b"".join(map(six.int2byte, iv))
-    #     )
-    #     assert actual_token == token.encode("ascii")
 
-    # @json_parametrize(
-    #     ("secret", "now", "src", "ttl_sec", "token"), "verify.json",
-    # )
-    # def test_verify(self, secret, now, src, ttl_sec, token, backend,
-    #                 monkeypatch):
-    #     f = Fernet2(secret.encode("ascii"), backend=backend)
-    #     current_time = calendar.timegm(iso8601.parse_date(now).utctimetuple())
-    #     monkeypatch.setattr(time, "time", lambda: current_time)
-    #     payload = f.decrypt(token.encode("ascii"), ttl=ttl_sec)
-    #     assert payload == src.encode("ascii")
-
-    # @json_parametrize(("secret", "token", "now", "ttl_sec"), "invalid.json")
-    # def test_invalid(self, secret, token, now, ttl_sec, backend, monkeypatch):
-    #     f = Fernet2(secret.encode("ascii"), backend=backend)
-    #     current_time = calendar.timegm(iso8601.parse_date(now).utctimetuple())
-    #     monkeypatch.setattr(time, "time", lambda: current_time)
-    #     with pytest.raises(InvalidToken):
-    #         f.decrypt(token.encode("ascii"), ttl=ttl_sec)
-
-    # def test_invalid_start_byte(self, backend):
-    #     f = Fernet2(base64.urlsafe_b64encode(b"\x00" * 32), backend=backend)
-    #     with pytest.raises(InvalidToken):
-    #         f.decrypt(base64.urlsafe_b64encode(b"\x82"))
-
-    # def test_timestamp_too_short(self, backend):
-    #     f = Fernet2(base64.urlsafe_b64encode(b"\x00" * 32), backend=backend)
-    #     with pytest.raises(InvalidToken):
-    #         f.decrypt(base64.urlsafe_b64encode(b"\x80abc"))
-
-    # def test_non_base64_token(self, backend):
-    #     f = Fernet2(base64.urlsafe_b64encode(b"\x00" * 32), backend=backend)
-    #     with pytest.raises(InvalidToken):
-    #         f.decrypt(b"\x00")
-
-    # def test_unicode(self, backend):
-    #     f = Fernet2(base64.urlsafe_b64encode(b"\x00" * 32), backend=backend)
-    #     with pytest.raises(TypeError):
-    #         f.encrypt(u"")
-    #     with pytest.raises(TypeError):
-    #         f.decrypt(u"")
-
-    # def test_timestamp_ignored_no_ttl(self, monkeypatch, backend):
-    #     f = Fernet2(base64.urlsafe_b64encode(b"\x00" * 32), backend=backend)
-    #     pt = b"encrypt me"
-    #     token = f.encrypt(pt)
-    #     ts = "1985-10-26T01:20:01-07:00"
-    #     current_time = calendar.timegm(iso8601.parse_date(ts).utctimetuple())
-    #     monkeypatch.setattr(time, "time", lambda: current_time)
-    #     assert f.decrypt(token, ttl=None) == pt
-
-    # @pytest.mark.parametrize("message", [b"", b"Abc!", b"\x00\xFF\x00\x80"])
-    # def test_roundtrips(self, message, backend):
-    #     f = Fernet2(Fernet2.generate_key(), backend=backend)
-    #     assert f.decrypt(f.encrypt(message)) == message
-
-    # def test_bad_key(self, backend):
-    #     with pytest.raises(ValueError):
-    #         Fernet2(base64.urlsafe_b64encode(b"abc"), backend=backend)
-
-def generate_private_key_ring():
+def generate_keypair(alias):
     # Why is there several keys for one version in the spec?
-    receiver1 = "ecc.secp2241.1.enc.priv"
+    # receiver1 = "ecc.secp2241.1.enc.priv"
     # TODO: does this have to be genertated by a specific algorithim 
     #  like: ec.generate_private_key( ec.SECP384R1(), default_backend()) ?
-    priv_key1 = urlsafe_b64encode("This is my super secure key!")
-    c = " {0} : -----BEGIN EC PRIVATE KEY-----\n {1} \n-----END EC PRIVATE KEY-----\n".format(receiver1, priv_key1)
+    # priv_key1 = urlsafe_b64encode("This is my super secure key!")
+    # c = " {0} :   -----BEGIN EC PRIVATE KEY-----\n {1} \n-----END EC PRIVATE KEY-----\n".format(receiver1, priv_key1)
     # 
-    return "{"+c+"}"
+
+    # if
+    curve = eval("ec.SECP192R1()") 
+    priv_key = ec.generate_private_key(curve, default_backend())
+    print(priv_key)
+    print(isinstance(priv_key, ec.EllipticCurvePrivateKey))
+    # serializate the private key
+    # eccPrivateKey = EllipticCurvePrivateKeyWithSerialization()
+
+    # print( eccPrivateKey.private_bytes(priv_key, Encoding.PEM, PrivateFormat.PKCS8) )
+    private_key = priv_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+    # generate public key with crypto lib
+    # g^x , crypto lib.. public key... 
+
+
+    # return public and private key pair
+    return private_key, public_key
+
+
 
 class TestPKFernet(object):
     """Test the new Fernet2 with this class. Make sure it tests all the
     functionalities offered by *PKFernet*.
     """
-    
-    private_keyring = generate_private_key_ring()
-    print(private_keyring)
-    public_keyring = urlsafe_b64encode("This is my super secure key!")
-    # print(len("This is my super secure key!"), key_priv, len(key_priv))
-    adata = "Sample associated data" 
-    
+    # with open('public_keys','rb') as json_file:
+    #     json_data = json.load(json_file)
 
+    # receiver_key_dict = {}
+    # # key  = load_pem_public_key(pkeydata, backend=default_backend())
+    # for r in json_data:
+    # #     receiver_key_dict.add(r)
+    #     receiver_key_dict[r] =json_data[r].strip("-----BEGIN PUBLIC KEY-----").strip("\n-----END PUBLIC KEY-----")
+    #     # a = json_data[r]
+        # print(r)
+        # print(receiver_key_dict[r])
+
+    # private_key = ec.generate_private_key(ec.SECP224R1(), default_backend())
+    # print(private_key)
     
-    pf = PKFernet(private_keyring, public_keyring)
+    # private_keyring = generate_private_key_ring()
+    # print(private_keyring)
+    # public_keyring = urlsafe_b64encode("This is my super secure key!")
+    # # print(len("This is my super secure key!"), key_priv, len(key_priv))
+    # adata = "Sample associated data" 
 
+    # get priv and pub keyrings
+    
+    # private_keyring, public_keyring = 
+    generate_keypair("alias 1")
 
-    # pf.import_pub_keys(receiver_name, receiver_public_keyring)
-    # where does this go?
+    # print(private_keyring, public_keyring)
+    public_keyrings = {}
+    """
+    # multiple recievers public keyrings
+    # others public key
+    # inputs need to be keyring format.
+    pf = PKFernet(private_keyring, public_keyrings)
+
+    # # ecc.secp224r1.enc.priv
+    receiver_private_key, receiver_public_key = generate_keypair("alias 2")
+    receiver_private_key, receiver_public_key2 = generate_keypair("alias 3")
+
+    pf.import_pub_key(receiver_name, receiver_public_keyring)
+
+    # receiver_ame = random name
+    # # where does this go? what dpes it do?
     # my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
-    # c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
+
+
+    c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
     # m = pf.decrypt(ctx, sender_name, verfiy_also=True)
 
-
+"""
 
