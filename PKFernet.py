@@ -20,7 +20,28 @@ class InvalidToken(Exception):
 
 class PKFernet(object):
 	def __init__(self, private_keyring, public_keyring, backend=None):
+		if backend is None:
+			backend = default_backend()
+
+		# privae key
+		priv_key = self.extract_priv_key(private_keyring)
+		# base64.urlsafe_b64decode(priv_key)
+		# if len(priv_key) != 32:
+		# 	raise ValueError(
+		# 		"PKFernet key must be 32 url-safe base64-encoded bytes."
+		# 	)
+
+		# self._signing_key = key[:16]
+		# self._encryption_key = key[16:]
+		self._backend = backend
+
+	def extract_priv_key(self, private_keyring):
 		pass
+
+	@classmethod
+	def generate_key(cls):
+		return base64.urlsafe_b64encode(os.urandom(32))
+		
 	def encrypt(self, msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata = '', sign_also=True):
 		pass
 	def decrypt(self, ctx, sender_name, verfiy_also=True):
