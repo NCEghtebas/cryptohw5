@@ -23,7 +23,6 @@ class PKFernet(object):
 	def __init__(self, private_keyring, public_keyrings, backend=None):
 		# empty dictionary for receivers and their public key rings
 
-		self.recerver_dict = {}
 
 		if backend is None:
 			backend = default_backend()
@@ -32,7 +31,7 @@ class PKFernet(object):
 		self.private_keyring =  private_keyring 
 		# make it of the 
 		# { rahul: { "": asdf, "": asdfsf } ,  asheesh}
-		self.public_keyrings = public.keyrings 
+		self.public_keyrings = public_keyrings 
 		self._backend = backend
 
 	@classmethod
@@ -55,13 +54,27 @@ class PKFernet(object):
 		pass
 	# pf.import_pub_keys(receiver_name, receiver_public_keyring)
 	# takes recivers name and public keyring
-	def import_pub_key(self, receiver_name, receiver_public_keyring):
-		if receiver_name in self.recerver_dict.keys():
-			for key in receiver_public_keyring:
-				self.recerver_dict[receiver_name].add(key)
+	def import_pub_key(self, receiver_name, receiver_public_keyrings):
+		# print(self.public_keyrings)
+		# print(receiver_public_keyrings)
+		if self.public_keyrings.has_key(receiver_name):
+			keyring_dict = receiver_public_keyrings
+			for alias in keyring_dict.keys():
+				self.public_keyrings[receiver_name][alias] = keyring_dict[alias]
 		else:
-			self.recerver_dict[receiver_name] = {}
-			for key in receiver_public_keyring:
-				self.recerver_dict[receiver_name].add(key)
+			self.public_keyrings[receiver_name] = receiver_public_keyrings
 
-		pass
+		# print(self.public_keyrings["tom"]["alias 2"])
+		# print(self.public_keyrings["tom"])
+		# if receiver_name in self.receiver_dict.keys():
+
+		# 	for keyring in list(receiver_public_keyrings.keys()):
+		# 		print receiver_public_keyrings.get(keyring)				
+		# 		# pass
+		# 		# self.receiver_dict[receiver_name].append(keyring)
+		# else:
+		# 	self.receiver_dict[receiver_name] = {}
+		# 	for keyring in receiver_public_keyrings:
+		# 		pass
+				# self.receiver_dict[receiver_name].append(keyring)
+

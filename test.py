@@ -97,7 +97,6 @@ def generate_keypair(alias):
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
         )
-    print(private_key)
     # generate public key with crypto lib
     # g^x , crypto lib.. public key... 
     pub_key = priv_key.public_key()
@@ -107,10 +106,9 @@ def generate_keypair(alias):
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
             # encryption_algorithm=serialization.NoEncryption()
         )
-    print(public_key)
 
     # return public and private key pair
-    return private_key, public_key
+    return { alias: private_key}, { alias: public_key}
 
 
 
@@ -141,29 +139,39 @@ class TestPKFernet(object):
 
     # get priv and pub keyrings
     
-    # private_keyring, public_keyring = 
-    generate_keypair("alias 1")
+    # ours
+    sender_private_key, sender_public_key = generate_keypair("ecc.secp224r1.1.enc.pub")
+
+    # print(sender_private_key)
+
 
     # print(private_keyring, public_keyring)
     public_keyrings = {}
-    '''
+    # {"tom" : "{'alias 2': "'-----BEGIN PUBLIC KEY-----\nMEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAERUrw9VGhAXM/uCLGi1U0ntfCB+Nh\nMfaByyOXdsq/1zTvdp61uNTEb65nZHbfJ1Gq\n-----END PUBLIC KEY-----\n'} "}
+    
     # multiple recievers public keyrings
     # others public key
     # inputs need to be keyring format.
-    pf = PKFernet(private_keyring, public_keyrings)
+    pf = PKFernet(sender_private_key, public_keyrings)
 
     # # ecc.secp224r1.enc.priv
+    # theirs
     receiver_private_key, receiver_public_key = generate_keypair("alias 2")
     receiver_private_key, receiver_public_key2 = generate_keypair("alias 3")
-
-    pf.import_pub_key(receiver_name, receiver_public_keyring)
+    # print(receiver_public_key)
+    # print(type(receiver_public_key))
+    pf.import_pub_key("tom", receiver_public_key)
+    print(public_keyrings)
+    pf.import_pub_key("rah", receiver_public_key2)
+    print("=============================")
+    print(public_keyrings)
 
     # receiver_ame = random name
     # # where does this go? what dpes it do?
     # my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
 
 
-    c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
+    # c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
     # m = pf.decrypt(ctx, sender_name, verfiy_also=True)
-'''
+
 
