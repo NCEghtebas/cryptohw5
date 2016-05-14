@@ -36,6 +36,10 @@ class PKFernet(object):
 		self._backend = backend
 
 	def extract_priv_key(self, private_keyring):
+		print(private_keyring.split(":" and ",", 1))
+		
+
+	def extract_pub_key(self, public_keyring):
 		pass
 
 	@classmethod
