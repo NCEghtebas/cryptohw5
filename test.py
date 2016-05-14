@@ -33,6 +33,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric import dsa, rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import PrivateFormat 
+from cryptography.hazmat.primitives.serialization import PublicFormat
 
 
 # Third-Party imports
@@ -85,8 +86,8 @@ def generate_keypair(alias):
     # if
     curve = eval("ec.SECP192R1()") 
     priv_key = ec.generate_private_key(curve, default_backend())
-    print(priv_key)
-    print(isinstance(priv_key, ec.EllipticCurvePrivateKey))
+    # print(priv_key)
+    # print(isinstance(priv_key, ec.EllipticCurvePrivateKey))
     # serializate the private key
     # eccPrivateKey = EllipticCurvePrivateKeyWithSerialization()
 
@@ -96,10 +97,17 @@ def generate_keypair(alias):
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
         )
-
+    print(private_key)
     # generate public key with crypto lib
     # g^x , crypto lib.. public key... 
+    pub_key = priv_key.public_key()
 
+    public_key = pub_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            # encryption_algorithm=serialization.NoEncryption()
+        )
+    print(public_key)
 
     # return public and private key pair
     return private_key, public_key
@@ -138,7 +146,7 @@ class TestPKFernet(object):
 
     # print(private_keyring, public_keyring)
     public_keyrings = {}
-    """
+    '''
     # multiple recievers public keyrings
     # others public key
     # inputs need to be keyring format.
@@ -157,6 +165,5 @@ class TestPKFernet(object):
 
     c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
     # m = pf.decrypt(ctx, sender_name, verfiy_also=True)
-
-"""
+'''
 

@@ -20,7 +20,7 @@ class InvalidToken(Exception):
 
 class PKFernet(object):
 
-	def __init__(self, private_keyring, public_keyring, backend=None):
+	def __init__(self, private_keyring, public_keyrings, backend=None):
 		# empty dictionary for receivers and their public key rings
 
 		self.recerver_dict = {}
@@ -28,31 +28,25 @@ class PKFernet(object):
 		if backend is None:
 			backend = default_backend()
 
-		# privae key
-		priv_key = self.extract_priv_key(private_keyring)
-		# base64.urlsafe_b64decode(priv_key)
-		# if len(priv_key) != 32:
-		# 	raise ValueError(
-		# 		"PKFernet key must be 32 url-safe base64-encoded bytes."
-		# 	)
-
-		# self._signing_key = key[:16]
-		# self._encryption_key = key[16:]
+		# private key
+		self.private_keyring =  private_keyring 
+		# make it of the 
+		# { rahul: { "": asdf, "": asdfsf } ,  asheesh}
+		self.public_keyrings = public.keyrings 
 		self._backend = backend
-
-	def extract_priv_key(self, private_keyring):
-		return (private_keyring.split(":" and ",", 1))
-
-
-	def extract_pub_key(self, public_keyring):
-		pass
 
 	@classmethod
 	def generate_key(cls):
 		return base64.urlsafe_b64encode(os.urandom(32))
 
 	def encrypt(self, msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata = '', sign_also=True):
-		pass
+		# pass
+		# signing?
+
+		# fernet..
+
+		# return  adata| <encryption header> | <shared secret> | ctx 
+		pass 
 	def decrypt(self, ctx, sender_name, verfiy_also=True):
 		pass
 	# my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
@@ -60,7 +54,8 @@ class PKFernet(object):
 
 		pass
 	# pf.import_pub_keys(receiver_name, receiver_public_keyring)
-	def import_pub_keys(self, receiver_name, receiver_public_keyring):
+	# takes recivers name and public keyring
+	def import_pub_key(self, receiver_name, receiver_public_keyring):
 		if receiver_name in self.recerver_dict.keys():
 			for key in receiver_public_keyring:
 				self.recerver_dict[receiver_name].add(key)
