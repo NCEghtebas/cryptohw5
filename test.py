@@ -19,7 +19,7 @@ import pytest
 import six
 
 from fernet2 import Fernet2, InvalidToken, MultiFernet
-from PKFernet import PKFernet
+from PKFernet import PKFernet, generate_keypair
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -74,42 +74,6 @@ class TestFernet(object):
     the bacward compatibility of the new Fernet2. 
     """
 
-def generate_keypair(alias):
-    # Why is there several keys for one version in the spec?
-    # receiver1 = "ecc.secp2241.1.enc.priv"
-    # TODO: does this have to be genertated by a specific algorithim 
-    #  like: ec.generate_private_key( ec.SECP384R1(), default_backend()) ?
-    # priv_key1 = urlsafe_b64encode("This is my super secure key!")
-    # c = " {0} :   -----BEGIN EC PRIVATE KEY-----\n {1} \n-----END EC PRIVATE KEY-----\n".format(receiver1, priv_key1)
-    # 
-
-    # if
-    curve = eval("ec.SECP192R1()") 
-    priv_key = ec.generate_private_key(curve, default_backend())
-    # print(priv_key)
-    # print(isinstance(priv_key, ec.EllipticCurvePrivateKey))
-    # serializate the private key
-    # eccPrivateKey = EllipticCurvePrivateKeyWithSerialization()
-
-    # print( eccPrivateKey.private_bytes(priv_key, Encoding.PEM, PrivateFormat.PKCS8) )
-    private_key = priv_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-    # generate public key with crypto lib
-    # g^x , crypto lib.. public key... 
-    pub_key = priv_key.public_key()
-
-    public_key = pub_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            # encryption_algorithm=serialization.NoEncryption()
-        )
-
-    # return public and private key pair
-    return { alias: private_key}, { alias: public_key}
-
 
 
 class TestPKFernet(object):
@@ -156,22 +120,30 @@ class TestPKFernet(object):
 
     # # ecc.secp224r1.enc.priv
     # theirs
-    receiver_private_key, receiver_public_key = generate_keypair("alias 2")
+    receiver_private_key, receiver_public_key = generate_keypair("ecc.secp224r1.1.enc.pub")
     receiver_private_key, receiver_public_key2 = generate_keypair("alias 3")
     # print(receiver_public_key)
     # print(type(receiver_public_key))
-    pf.import_pub_key("tom", receiver_public_key)
-    print(public_keyrings)
-    pf.import_pub_key("rah", receiver_public_key2)
-    print("=============================")
-    print(public_keyrings)
+
+    receiver_pub_keyring1_dict1 = {"ecc.secp224r1.1.enc.pub":receiver_public_key}
+    receiver_pub_keyring1_dict2 = {"alias3":receiver_public_key2}
+
+    pf.import_pub_key("tom", receiver_pub_keyring1_dict1)
+    
+    pf.import_pub_key("rah", receiver_pub_keyring1_dict2)
+    
+    
 
     # receiver_ame = random name
     # # where does this go? what dpes it do?
     # my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
 
+    msg = "A+++++ cyrpto for Chloe and Yiqing"
+    receiver_name = "tom"
+    receiver_enc_pub_key_alias = "ecc.secp224r1.1.enc.pub"
+    sender_sign_header = "ecdh_with_DSA. "
+    c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
 
-    # c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
     # m = pf.decrypt(ctx, sender_name, verfiy_also=True)
 
 
