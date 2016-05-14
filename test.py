@@ -147,18 +147,20 @@ class TestPKFernet(object):
     
     private_keyring = generate_private_key_ring()
     print(private_keyring)
-
     public_keyring = urlsafe_b64encode("This is my super secure key!")
     # print(len("This is my super secure key!"), key_priv, len(key_priv))
     adata = "Sample associated data" 
-    pf = PKFernet(private_keyring, public_keyring)
+    
 
     
-    pf.import_pub_keys(receiver_name, receiver_public_keyring)
+    pf = PKFernet(private_keyring, public_keyring)
+
+
+    # pf.import_pub_keys(receiver_name, receiver_public_keyring)
     # where does this go?
     # my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
-    c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata=‘’, sign_also=True)
-    m = pf.decrypt(ctx, sender_name, verfiy_also=True)
+    # c = pf.encrypt(msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header, adata='', sign_also=True)
+    # m = pf.decrypt(ctx, sender_name, verfiy_also=True)
 
 
 
