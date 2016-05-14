@@ -134,11 +134,12 @@ class TestPKFernet(object):
     functionalities offered by *Fernet2*.
     """
     
-    key = urlsafe_b64encode("This is my super secure key!")
+    key_pub = urlsafe_b64encode("This is my super secure key!")
+    key_priv = urlsafe_b64encode("This is my super secure key!")
     adata = "Sample associated data" 
-    fnt = PKFernet(key)
-    ctxt = fnt.encrypt('Secret Message', associated_data=adata)
-    ptxt = fnt.decrypt(ctxt, associated_data=adata)
+    fnt = PKFernet(key_pub, key_priv)
+    # ctxt = fnt.encrypt('Secret Message', associated_data=adata)
+    # ptxt = fnt.decrypt(ctxt, associated_data=adata)
     pass
 
 
