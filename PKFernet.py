@@ -21,7 +21,7 @@ from fernet import Fernet
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.hazmat.primitives.serialization import PrivateFormat 
 from cryptography.hazmat.primitives.serialization import PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec as ecc
 # Third-Party imports
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.exceptions import InvalidSignature
@@ -49,31 +49,27 @@ def generate_keypair(alias):
     # 
 
     # if
-    curve = eval("ec.SECP192R1()") 
-    priv_key = ec.generate_private_key(curve, default_backend())
-    # print(priv_key)
-    # print(isinstance(priv_key, ec.EllipticCurvePrivateKey))
-    # serializate the private key
-    # eccPrivateKey = EllipticCurvePrivateKeyWithSerialization()
+    algo = alias.split(".")[0]
+    key_para = alias.split(".")[1].upper()
+    version = alias.split(".")[2]
+    usage = alias.split(".")[3]
+    key_type = alias.split(".")[4]
 
-    # print( eccPrivateKey.private_bytes(priv_key, Encoding.PEM, PrivateFormat.PKCS8) )
-    private_key = priv_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-    # generate public key with crypto lib
-    # g^x , crypto lib.. public key... 
-    pub_key = priv_key.public_key()
+    # "ec.SECP192R1()" 
+    if algo == "ecc":
+        curve = eval(algo+"."+key_para+ "()") 
+        priv_key = ecc.generate_private_key(curve, default_backend())
+		pub_key = priv_key.public_key()
+    elif algo == "dsa":
+        priv_key = dsa.generate_private_key(
+            key_size= 2048,
+            backend=default_backend())
+		pub_key = priv_key.public_key()
+    else:
+        print("not valid")
 
-    public_key = pub_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            # encryption_algorithm=serialization.NoEncryption()
-        )
+	# pub_key = priv_key.public_key()
 
-    # return public and private key pair
-    # return { alias: private_key}, { alias: public_key}
     return priv_key, pub_key
 
 class PKFernet(object):
@@ -98,53 +94,81 @@ class PKFernet(object):
 		return base64.urlsafe_b64encode(os.urandom(32))
 
 	def encrypt(self, msg, receiver_name, receiver_enc_pub_key_alias, sender_sign_header , adata = '', sign_also=True):
-		# generate private pblic key pair.. only use private key fro shared secret. 
-		e_private_key, public_key = generate_keypair(receiver_enc_pub_key_alias)
 
-		# print(type(e_private_key))
+		e_private_key, e_public_key = generate_keypair(receiver_enc_pub_key_alias)
 
 		rec_pub_enc_key = self.public_keyrings[receiver_name][receiver_enc_pub_key_alias]
-		# print(rec_pub_enc_key)
-		# step 2, sign?
+	
 
-		# step 3 encrypt 
+		shared_key = e_private_key.exchange(ecc.ECDH(), rec_pub_enc_key) 
 
-		# What does private key look like?
-		# generate a public and private key pair which is good only for this encryption
-		shared_key = e_private_key.exchange(ec.ECDH(), rec_pub_enc_key) 
 
-		print(type(shared_key))
-		print(shared_key)
-		# could also do rsa instead of ecdh for extra credit. 
+  		algo = sender_sign_header.split(".")[0]
+  		key_para = sender_sign_header.split(".")[1]
 
-		# make sure we generate only the random key.... dont call gen random key twice? 
-		#
-
-		s_private_key = dsa.generate_private_key(
-		    key_size=1024,
-		    backend=default_backend()
-		)
-		signer = s_private_key.signer(hashes.SHA256())
+  		if algo == "ecdsa_with_sha256":
+  			
+  			
+			signer = e_private_key.signer(ecc.ECDSA(hashes.SHA256()))
+		else:
+			print("signature not supported")
 		data = urlsafe_b64encode(msg)
 		signer.update(data)
 		signature = signer.finalize()
 
 		m = msg + "|" + sender_sign_header + "|" + signature
-		# m_utf8 = urlsafe_b64encode(m)
+		m_utf8 = urlsafe_b64encode(m)
 
 		# print(m)
 		# signature message... 
 		# need correct encoded.. urlbase64. 
 		# signing.. choose one algo that we like
 		fnt = Fernet2(urlsafe_b64encode(shared_key))
-		ctxt = fnt.encrypt(m, associated_data=adata)
-		
+		ctxt = fnt.encrypt(m_utf, associated_data=adata)
+		# todo... for e_public key
+		 # public_key = pub_key.public_bytes(
+   #          encoding=serialization.Encoding.PEM,
+   #          format=serialization.PublicFormat.SubjectPublicKeyInfo,
+   #          # encryption_algorithm=serialization.NoEncryption()
+   #      )
+
+
 		# shared secret = Rpk
-		return  adata + "|" + receiver_enc_pub_key_alias + "|" +  Rpk + "|" + ctxt 
- 
+		return  adata + "|" + receiver_enc_pub_key_alias + "|" +  urlsafe_b64encode(e_public_key) + "|" + ctxt 
+
 	def decrypt(self, ctx, sender_name, verfiy_also=True):
+		# ptxt = fnt.decrypt(ctxt, associated_data=adata)
+		
+		adata = ctx.split("|")[0]
+		encryption_algorithm = ctx.split("|")[1]
+		e_public_key = ctx.split("|")[2]
+		ctx = ctx.split("|")[3]
+
+
+		# generate shared
+
+		shared_key = my_keyrig.exchange(ec.ECDH(), e_pub_enc_key) #g^xy
+
+		# decrypt message
+
+		fnt = Fernet2( shared_key)
 		ptxt = fnt.decrypt(ctxt, associated_data=adata)
-		pass
+
+		# only m is data
+		# m = 
+		# sender_sign_header = 
+		# signature =
+
+		# based on header.. we can do hashes.___
+
+		# use public key of reciever
+		verifier = public_key.verifier(signature, hashes.SHA256())
+		verifier.update(data)
+		verifier.verify()
+
+		return plaintxt
+
+
 	# my_pub_keys_json_blob = pf.export_pub_keys(key_alias_list=[])
 	def export_pub_keys(self, key_alias_list=[]):
 
@@ -161,6 +185,9 @@ class PKFernet(object):
 		else:
 			self.public_keyrings[receiver_name] = receiver_public_keyrings
 
+
+		# print(receiver_name)
+		# print(self.public_keyrings["tom"])
 		# print(self.public_keyrings["tom"]["alias 2"])
 		# print(self.public_keyrings["tom"])
 		# if receiver_name in self.receiver_dict.keys():
